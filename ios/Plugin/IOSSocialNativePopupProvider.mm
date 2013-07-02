@@ -1,0 +1,484 @@
+//
+//  IOSSocialNativePopupProvider.mm
+//
+//  Copyright (c) 2013 CoronaLabs Inc. All rights reserved.
+//
+
+#include "IOSSocialNativePopupProvider.h"
+
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import <Social/Social.h>
+#import <Accounts/Accounts.h>
+
+#import "CoronaRuntime.h"
+#include "CoronaAssert.h"
+#include "CoronaEvent.h"
+#include "CoronaLua.h"
+#include "CoronaLibrary.h"
+
+// ----------------------------------------------------------------------------
+
+@class UIViewController;
+
+namespace Corona
+{
+
+// ----------------------------------------------------------------------------
+
+class IOSSocialNativePopupProvider
+{
+	public:
+		typedef IOSSocialNativePopupProvider Self;
+
+	public:
+		static int Open( lua_State *L );
+		static int Finalizer( lua_State *L );
+		static Self *ToLibrary( lua_State *L );
+
+	protected:
+		IOSSocialNativePopupProvider();
+		bool Initialize( void *platformContext );
+
+	public:
+		int ValueForKey( lua_State *L );
+
+	public:
+		UIViewController* GetAppViewController() const { return fAppViewController; }
+
+	public:
+		static int canShowPopup( lua_State *L );
+		static int showPopup( lua_State *L );
+
+	private:
+		UIViewController *fAppViewController;
+};
+
+// ----------------------------------------------------------------------------
+
+const char *kServiceProviderName[] = { "twitter", "facebook", "sinaWeibo" };
+enum SERVICE_PROVIDER_CONSTS { TWITTER, FACEBOOK, SINAWEIBO };
+
+static const char kPopupName[] = "social";
+static const char kMetatableName[] = __FILE__; // Globally unique value
+
+
+int
+IOSSocialNativePopupProvider::Open( lua_State *L )
+{
+	CoronaLuaInitializeGCMetatable( L, kMetatableName, Finalizer );
+	void *platformContext = CoronaLuaGetContext( L );
+
+	const char *name = lua_tostring( L, 1 ); CORONA_ASSERT( 0 == strcmp( kPopupName, name ) );
+	int result = CoronaLibraryProviderNew( L, "native.popup", name, "com.coronalabs" );
+
+	if ( result > 0 )
+	{
+		int libIndex = lua_gettop( L );
+
+		Self *library = new Self;
+
+		if ( library->Initialize( platformContext ) )
+		{
+			static const luaL_Reg kFunctions[] =
+			{
+				{ "canShowPopup", canShowPopup },
+				{ "showPopup", showPopup },
+
+				{ NULL, NULL }
+			};
+
+			// Register functions as closures, giving each access to the
+			// 'library' instance via ToLibrary()
+			{
+				lua_pushvalue( L, libIndex ); // push library
+				CoronaLuaPushUserdata( L, library, kMetatableName ); // push library ptr
+				luaL_openlib( L, NULL, kFunctions, 1 );
+				lua_pop( L, 1 ); // pop library
+			}
+		}
+	}
+
+	return result;
+}
+
+int
+IOSSocialNativePopupProvider::Finalizer( lua_State *L )
+{
+	Self *library = (Self *)CoronaLuaToUserdata( L, 1 );
+	delete library;
+	return 0;
+}
+
+IOSSocialNativePopupProvider::Self *
+IOSSocialNativePopupProvider::ToLibrary( lua_State *L )
+{
+	// library is pushed as part of the closure
+	Self *library = (Self *)CoronaLuaToUserdata( L, lua_upvalueindex( 1 ) );
+	return library;
+}
+
+// ----------------------------------------------------------------------------
+
+IOSSocialNativePopupProvider::IOSSocialNativePopupProvider()
+:	fAppViewController( nil )
+{
+}
+
+bool
+IOSSocialNativePopupProvider::Initialize( void *platformContext )
+{
+	bool result = ( ! fAppViewController );
+
+	if ( result )
+	{
+		id<CoronaRuntime> runtime = (id<CoronaRuntime>)platformContext;
+		fAppViewController = runtime.appViewController; // TODO: Should we retain?
+	}
+
+	return result;
+}
+
+// ----------------------------------------------------------------------------
+
+static const char *kEventName = CoronaEventPopupName();
+
+static bool
+IsSocialFrameworkAvailable()
+{
+	return nil != [SLComposeViewController class];	
+}
+
+static const char*
+StringForControllerResult( SLComposeViewControllerResult value )
+{
+	static const char kCancelledAction[] = "cancelled";
+	static const char kSentAction[] = "sent";
+	
+	const char *result = NULL;
+	
+	switch ( value )
+	{
+		case SLComposeViewControllerResultCancelled:
+			result = kCancelledAction;
+			break;
+		case SLComposeViewControllerResultDone:
+			result = kSentAction;
+			break;
+		default:
+			break;
+	}
+
+	return result;
+}
+
+static void
+PushEvent( lua_State *L )
+{
+	Corona::Lua::NewEvent( L, kEventName );
+	lua_pushstring( L, kPopupName );
+	lua_setfield( L, -2, CoronaEventTypeKey() );
+}
+
+static void
+PushEvent( lua_State *L, SLComposeViewControllerResult result )
+{
+	PushEvent( L );
+
+	const char *value = StringForControllerResult( result );
+
+	if ( value )
+	{
+		lua_pushstring( L, value );
+		lua_setfield( L, -2, "action" );
+	}
+}
+
+// Error situation
+static void
+PushEvent( lua_State *L, const char *value )
+{
+	PushEvent( L );
+
+	// The value that could not fit
+	lua_pushstring( L, value );
+	lua_setfield( L, -2, "limitReached" );
+}
+
+static bool
+AddImage( lua_State *L, SLComposeViewController *controller, Corona::Lua::Ref listenerRef )
+{
+	using namespace Corona;
+
+	bool result = false;
+
+	// pathService->PushPath( L, -1 );
+	CoronaLibraryCallFunction( L, "system", "pathForTable", "t>s", CoronaLuaNormalize( L, -1 ) );
+	const char *str = lua_tostring( L, -1 );
+	if ( str )
+	{
+		NSString *path = [NSString stringWithUTF8String:str];
+		UIImage *image = [UIImage imageWithContentsOfFile:path];
+		result = [controller addImage:image];
+		if ( ! result && listenerRef )
+		{
+			// Create event
+			PushEvent( L, str );
+			Lua::DispatchEvent( L, listenerRef, 0 );
+		}
+	}
+	lua_pop( L, 1 );
+
+	return result;
+}
+
+static bool
+AddUrl( lua_State *L, SLComposeViewController *controller, Corona::Lua::Ref listenerRef )
+{
+	using namespace Corona;
+
+	bool result = false;
+
+	const char *str = lua_tostring( L, -1 );
+	if ( str )
+	{
+		NSString *path = [NSString stringWithUTF8String:str];
+		NSURL *url = [NSURL URLWithString:path];
+		result = [controller addURL:url];
+		if ( ! result && listenerRef )
+		{
+			// Limit reached: create event and invoke listener
+			PushEvent( L, str );
+			Lua::DispatchEvent( L, listenerRef, 0 );
+		}
+	}
+
+	return result;
+}
+
+int
+IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
+{
+	bool isAvailable = false;	
+	const char *serviceName = lua_tostring( L, -1 );
+	
+	// Second argument (service) should be a string
+	if ( lua_isstring( L, -1 ) )
+	{
+		// Check if passed service type matches the 3 services we support
+		if ( 0 == strcmp( kServiceProviderName[TWITTER], serviceName ) )
+		{
+			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeTwitter];
+		}
+		else if ( 0 == strcmp( kServiceProviderName[FACEBOOK], serviceName ) )
+		{
+			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeFacebook];
+		}
+		else if ( 0 == strcmp( kServiceProviderName[SINAWEIBO], serviceName ) )
+		{
+			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeSinaWeibo];
+		}
+		else
+		{
+			luaL_error( L, "native.canShowPopup( '%s' ): Invalid service specified. Supported services are: %s, %s, %s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO] );
+		}
+	}
+	else
+	{
+		luaL_error( L, "native.canShowPopup( '%s' ) expects 2 arguments `popupType`, `service`. For example: native.showPopup( '%s', '%s' )", kPopupName, kPopupName, kServiceProviderName[TWITTER] );
+	}
+	lua_pop( L, 1 );
+	
+	// Push the result
+	lua_pushboolean( L, isAvailable );
+
+	return 1;
+}
+
+int
+IOSSocialNativePopupProvider::showPopup( lua_State *L )
+{
+	using namespace Corona;
+
+	// Library instance
+	Self *context = ToLibrary( L );
+		
+	// If we have context, and our social framework is available 
+	if ( context && IsSocialFrameworkAvailable() )
+	{
+		Self& library = * context;
+				
+		// Pointer to our SLComposeViewController
+		SLComposeViewController *controller = nil;
+		
+		// Initialize our app view controller
+		UIViewController *appViewController = library.GetAppViewController();
+
+		// Retrieve keys from our "options" table
+		if ( lua_istable( L, 2 ) )
+		{
+			Lua::Ref listenerRef = NULL;
+
+			// options.listener
+			lua_getfield( L, -1, "listener" );
+			if ( Lua::IsListener( L, -1, kEventName ) )
+			{
+				// Create native reference to listener
+				listenerRef = Lua::NewRef( L, -1 );
+			}
+			lua_pop( L, 1 );
+			
+			
+			// options.provider (this is a required param)
+			lua_getfield( L, -1, "service" );
+			const char *service = lua_tostring( L, -1 );
+			if ( lua_isstring( L, -1 ) )
+			{
+				NSString *SLServiceType = nil;
+				
+				// Check if passed service type matches the 3 services we support, and set the service type accordingly
+				if ( 0 == strcmp( kServiceProviderName[TWITTER], service ) )
+				{
+					SLServiceType = SLServiceTypeTwitter;
+				}
+				if ( 0 == strcmp( kServiceProviderName[FACEBOOK], service ) )
+				{
+					SLServiceType = SLServiceTypeFacebook;
+				}
+				if ( 0 == strcmp( kServiceProviderName[SINAWEIBO], service ) )
+				{
+					SLServiceType = SLServiceTypeSinaWeibo;
+				}
+				
+				// If passed service type
+				if ( nil == SLServiceType )
+				{
+					luaL_error( L, "native.canShowPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s,", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO] );
+				}
+			
+				// Set up our SLComposeViewController, for the service type specified
+				controller = [SLComposeViewController composeViewControllerForServiceType:SLServiceType];
+				
+				// Default completion handler
+				SLComposeViewControllerCompletionHandler defaultHandler =
+					^(SLComposeViewControllerResult result)
+					{
+						// Dismiss the social composition view controller.
+						[appViewController dismissModalViewControllerAnimated:YES];
+					};
+				[controller setCompletionHandler:defaultHandler];
+				
+				// If a listener was set
+				if ( listenerRef )
+				{
+					// Custom completion handler
+					[controller setCompletionHandler:^(SLComposeViewControllerResult result)
+					{
+						// Inherit default behavior
+						defaultHandler( result );
+
+						// Create event and invoke listener
+						PushEvent( L, result ); // push event
+						Lua::DispatchEvent( L, listenerRef, 0 );
+
+						// Free native reference to listener
+						Lua::DeleteRef( L, listenerRef );
+					}];
+				}
+			}
+			else
+			{
+				luaL_error( L, "native.showPopup( %s ) service expected, got nil", kPopupName );
+			}
+			lua_pop( L, 1 );
+			
+
+			// options.message
+			// Set the initial message text
+			lua_getfield( L, -1, "message" );
+			const char *msg = lua_tostring( L, -1 );
+			if ( msg )
+			{
+				NSString *message = [NSString stringWithUTF8String:msg];
+				if ( ! [controller setInitialText:message] )
+				{
+					if ( listenerRef )
+					{
+						// Limit reached: create event and invoke listener
+						PushEvent( L, msg ); // push event
+						Lua::DispatchEvent( L, listenerRef, 0 );
+					}
+				}
+			}
+			lua_pop( L, 1 );
+
+			// options.image
+			lua_getfield( L, -1, "image" );
+			if ( lua_istable( L, -1 ) )
+			{
+				int numImages = lua_objlen( L, -1 );
+				if ( numImages > 0 )
+				{
+					bool noError = true;
+
+					// table is an array of 'path' tables
+					for ( int i = 1; noError && i <= numImages; i++ )
+					{
+						lua_rawgeti( L, -1, i );
+						noError = AddImage( L, controller, listenerRef );
+						lua_pop( L, 1 );
+					}
+				}
+				else
+				{
+					AddImage( L, controller, listenerRef );
+				}
+			}
+			lua_pop( L, 1 );
+
+			// options.url
+			lua_getfield( L, -1, "url" );
+			if ( lua_istable( L, -1 ) )
+			{
+				int numUrls = lua_objlen( L, -1 );
+				if ( numUrls > 0 )
+				{
+					bool noError = true;
+
+					// table is an array of 'path' tables
+					for ( int i = 1; noError && i <= numUrls; i++ )
+					{
+						lua_rawgeti( L, -1, i );
+						noError = AddUrl( L, controller, listenerRef );
+						lua_pop( L, 1 );
+					}
+				}
+			}
+			else if ( LUA_TSTRING == lua_type( L, -1 ) )
+			{
+				AddUrl( L, controller, listenerRef );
+			}
+			lua_pop( L, 1 );
+		}
+
+		// Present the social composition view controller modally.
+		[appViewController presentModalViewController:controller animated:YES];
+	}
+
+	return 0;
+}
+
+
+// ----------------------------------------------------------------------------
+
+} // namespace Corona
+
+// ----------------------------------------------------------------------------
+
+CORONA_EXPORT
+int luaopen_CoronaProvider_native_popup_social( lua_State *L )
+{
+	return Corona::IOSSocialNativePopupProvider::Open( L );
+}
+
+// ----------------------------------------------------------------------------

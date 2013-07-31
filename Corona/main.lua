@@ -38,7 +38,9 @@
 -- NOTE: More information on Sina Weibo here http://www.weibo.com/
 
 -- If we are on the simulator, show a warning that this plugin is only supported on device
-if "simulator" == system.getInfo( "environment" ) then
+local isSimulator = "simulator" == system.getInfo( "environment" )
+
+if isSimulator then
 	native.showAlert( "Build for device", "This plugin is not supported on the Corona Simulator, please build for an iOS device or Xcode simulator", { "OK" } )
 end
 
@@ -70,7 +72,7 @@ local function onShareButtonReleased( event )
 		end
 
 		-- Show the popup
-		native.showPopup( popupName,
+		native:showPopup( popupName,
 		{
 			service = serviceName,
 			message = "I saved the planet using the Corona SDK!",
@@ -88,8 +90,12 @@ local function onShareButtonReleased( event )
 			}
 		})
 	else
-		-- Popup isn't available.. Show error message
-		native.showAlert( "Cannot send " .. serviceName .. " message.", "Please setup your " .. serviceName .. " account or check your network connection", { "OK" } )
+		if isSimulator then
+			native.showAlert( "Build for device", "This plugin is not supported on the Corona Simulator, please build for an iOS device or Xcode simulator", { "OK" } )
+		else
+			-- Popup isn't available.. Show error message
+			native.showAlert( "Cannot send " .. serviceName .. " message.", "Please setup your " .. serviceName .. " account or check your network connection", { "OK" } )
+		end
 	end
 end
 

@@ -83,10 +83,7 @@ local function onShareButtonReleased( event )
 			},
 			url = 
 			{ 
-				"http://www.apple.com",
 				"http://www.coronalabs.com",
-				"http://docs.coronalabs.com",
-				"http://developer.coronalabs.com" 
 			}
 		})
 	else

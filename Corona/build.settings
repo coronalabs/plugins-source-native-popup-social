@@ -1,13 +1,10 @@
 settings =
 {
-	--[[
-	orientation = {
+	orientation = 
+	{
 		default = "portrait", 
 		supported = { "portrait", },
-		-- supported = { "landscapeLeft", "landscapeRight" },
-		-- supported = { "landscapeLeft", "landscapeRight", "portrait", "portraitUpsideDown", },
 	},
-	--]]
 
 	iphone =
 	{
@@ -23,5 +20,15 @@ settings =
 			},
 
 		},
-	}
+	},
+	
+	plugins =
+	{
+		-- key is the name passed to Lua's 'require()'
+		["CoronaProvider.native.popup.social"] =
+		{
+			-- required
+			publisherId = "com.coronalabs",
+		},
+	},
 }

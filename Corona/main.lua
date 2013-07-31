@@ -33,27 +33,51 @@
 -- licensed under these same terms and conditions.
 --*********************************************************************************************
 
+-- Supported services: twitter, facebook & sinaWeibo
+-- Platforms: iOS
+-- NOTE: More information on Sina Weibo here http://www.weibo.com/
+
+-- If we are on the simulator, show a warning that this plugin is only supported on device
+if "simulator" == system.getInfo( "environment" ) then
+	native.showAlert( "Build for device", "This plugin is not supported on the Corona Simulator, please build for an iOS device or Xcode simulator", { "OK" } )
+end
+
+-- Hide the status bar
+display.setStatusBar( display.HiddenStatusBar )
+
+-- Require the widget library
+local widget = require( "widget" )
+
+-- This is the name of the native popup to show, in this case we are showing the "social" popup
 local popupName = "social"
-local serviceName = "twitter" -- Supported values: "twitter", "facebook", "sinaWeibo"
 
-local isAvailable = native.canShowPopup( popupName, serviceName )
+-- Display a background
+local background = display.newImage( "world.jpg", true )
 
-if isAvailable then
-	local listener = {}
-	function listener:popup( event )
-		print( "name(" .. event.name .. ") type(" .. event.type .. ") action(" .. tostring(event.action) .. ") limitReached(" .. tostring(event.limitReached) .. ")" )
-	end
+-- Display some text
+local achivementText = display.newText( "You saved the planet!\n\nTouch any of the buttons below to share your victory with your friends!", 12, 10, display.contentWidth - 20, 0, native.systemFontBold, 18 )
 
-	native.showPopup(
-		popupName,
+-- Exectuted upon touching & releasing a widget button
+local function onShareButtonReleased( event )
+	local serviceName = event.target.id
+	local isAvailable = native.canShowPopup( popupName, serviceName )
+
+	-- If it is possible to show the popup
+	if isAvailable then
+		local listener = {}
+		function listener:popup( event )
+			print( "name(" .. event.name .. ") type(" .. event.type .. ") action(" .. tostring(event.action) .. ") limitReached(" .. tostring(event.limitReached) .. ")" )			
+		end
+
+		-- Show the popup
+		native.showPopup( popupName,
 		{
 			service = serviceName,
-			message = "hi there!",
+			message = "I saved the planet using the Corona SDK!",
 			listener = listener,
 			image = 
 			{
 				{ filename = "world.jpg", baseDir = system.ResourceDirectory },
-				{ filename = "bkg_wood.png", baseDir = system.ResourceDirectory },
 			},
 			url = 
 			{ 
@@ -62,10 +86,46 @@ if isAvailable then
 				"http://docs.coronalabs.com",
 				"http://developer.coronalabs.com" 
 			}
-		} )
-else
-	native.showAlert(
-		"Cannot send " .. serviceName .. " message.",
-		"Please setup your " .. serviceName .. " account or check your network connection",
-		{ "OK" } )
+		})
+	else
+		-- Popup isn't available.. Show error message
+		native.showAlert( "Cannot send " .. serviceName .. " message.", "Please setup your " .. serviceName .. " account or check your network connection", { "OK" } )
+	end
 end
+
+
+-- Create a facebook button
+local facebookButton = widget.newButton
+{
+	id = "facebook",
+	left = 0,
+	top = 180,
+	width = 240,
+	label = "Share On Facebook",
+	onRelease = onShareButtonReleased,
+}
+facebookButton.x = display.contentCenterX
+
+-- Create a twitter button
+local twitterButton = widget.newButton
+{
+	id = "twitter",
+	left = 0,
+	top = 260,
+	width = 240,
+	label = "Share On Twitter",
+	onRelease = onShareButtonReleased,
+}
+twitterButton.x = display.contentCenterX
+
+-- Create a sinaWeibo button
+local sinaWeiboButton = widget.newButton
+{
+	id = "sinaWeibo",
+	left = 0,
+	top = 340,
+	width = 240,
+	label = "Share On SinaWeibo",
+	onRelease = onShareButtonReleased,
+}
+sinaWeiboButton.x = display.contentCenterX

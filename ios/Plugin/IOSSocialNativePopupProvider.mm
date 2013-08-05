@@ -259,6 +259,13 @@ AddUrl( lua_State *L, SLComposeViewController *controller, Corona::Lua::Ref list
 int
 IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 {
+	// If the SLComposeViewController class isn't available, don't proceed any further (prevent's crash on iOS versions less than 6.0)
+	if ( NSClassFromString( @"SLComposeViewController" ) == Nil )
+	{
+		printf( "Warning: The Social plugin is only supported on iOS versions greater or equal to iOS 6.0\n" );
+		return 0;
+	}
+
 	bool isAvailable = false;	
 	const char *serviceName = lua_tostring( L, -1 );
 	
@@ -302,6 +309,13 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 
 	// Library instance
 	Self *context = ToLibrary( L );
+	
+	// If the SLComposeViewController class isn't available, don't proceed any further (prevent's crash on iOS versions less than 6.0)
+	if ( NSClassFromString( @"SLComposeViewController" ) == Nil )
+	{
+		printf( "Warning: The Social plugin is only supported on iOS versions greater or equal to iOS 6.0\n" );
+		return 0;
+	}
 		
 	// If we have context, and our social framework is available 
 	if ( context && IsSocialFrameworkAvailable() )

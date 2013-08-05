@@ -68,11 +68,11 @@ local function onShareButtonReleased( event )
 	if isAvailable then
 		local listener = {}
 		function listener:popup( event )
-			print( "name(" .. event.name .. ") type(" .. event.type .. ") action(" .. tostring(event.action) .. ") limitReached(" .. tostring(event.limitReached) .. ")" )			
+			print( "name(" .. event.name .. ") type(" .. event.type .. ") action(" .. tostring(event.action) .. ") limitReached(" .. tostring(event.limitReached) .. ")" )
 		end
 
 		-- Show the popup
-		native:showPopup( popupName,
+		native.showPopup( popupName,
 		{
 			service = serviceName,
 			message = "I saved the planet using the Corona SDK!",

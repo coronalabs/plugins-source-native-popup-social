@@ -377,8 +377,12 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 				SLComposeViewControllerCompletionHandler defaultHandler =
 					^(SLComposeViewControllerResult result)
 					{
-						// Dismiss the social composition view controller.
-						[appViewController dismissModalViewControllerAnimated:YES];
+						// Only dismiss the controller if we are running on iOS 6 or lower (As of iOS 7, if the app links against the iOS 7 SDK, the view controller will dismiss itself even if the caller supplies a completionHandler.)
+						if ( [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] == NSOrderedAscending )
+						{
+							// Dismiss the social composition view controller.
+							[appViewController dismissModalViewControllerAnimated:YES];
+						}
 					};
 				[controller setCompletionHandler:defaultHandler];
 				

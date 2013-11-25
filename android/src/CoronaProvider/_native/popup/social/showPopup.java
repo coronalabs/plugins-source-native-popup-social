@@ -326,6 +326,11 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				
 			    sharingIntent.putParcelableArrayListExtra( Intent.EXTRA_STREAM, imageUris );
 			}
+			else // If there are no images, set the mime type to text/plain
+			{
+				// Set the type to text/plain.
+				sharingIntent.setType( "text/plain" );
+			}
 			
 			// Create a string builder, to store the message and urls
 			StringBuilder postMessage = new StringBuilder();

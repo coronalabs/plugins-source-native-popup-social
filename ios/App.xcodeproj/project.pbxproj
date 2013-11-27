@@ -10,6 +10,8 @@
 		3012154717AFDFCA00AB0A65 /* CoronaResources.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 3012154617AFDFCA00AB0A65 /* CoronaResources.bundle */; };
 		3097A1D21781EB1000B88648 /* AdSupport.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3097A1D11781EB1000B88648 /* AdSupport.framework */; };
 		30C6E78C1782DE0400879B5D /* Social.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30C6E78B1782DE0400879B5D /* Social.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		30D0B104184549B20093659C /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30D0B103184549B20093659C /* CoreVideo.framework */; };
+		30D0B105184549B90093659C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A484112315114F700074BD57 /* GLKit.framework */; };
 		A447B610165D72FB009EA762 /* AppCoronaDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = A447B60F165D72FB009EA762 /* AppCoronaDelegate.mm */; };
 		A447B6671666FD02009EA762 /* MainWindow-iPad.xib in Resources */ = {isa = PBXBuildFile; fileRef = A447B6641666FD02009EA762 /* MainWindow-iPad.xib */; };
 		A447B6681666FD02009EA762 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A447B6651666FD02009EA762 /* MainWindow.xib */; };
@@ -66,6 +68,7 @@
 		3012154617AFDFCA00AB0A65 /* CoronaResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = CoronaResources.bundle; path = ../../../../../../../../../Applications/CoronaEnterprise/Corona/ios/resource/CoronaResources.bundle; sourceTree = "<group>"; };
 		3097A1D11781EB1000B88648 /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
 		30C6E78B1782DE0400879B5D /* Social.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Social.framework; path = System/Library/Frameworks/Social.framework; sourceTree = SDKROOT; };
+		30D0B103184549B20093659C /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		A447B60E165D72FB009EA762 /* AppCoronaDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppCoronaDelegate.h; sourceTree = SOURCE_ROOT; };
 		A447B60F165D72FB009EA762 /* AppCoronaDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppCoronaDelegate.mm; sourceTree = SOURCE_ROOT; };
 		A447B6641666FD02009EA762 /* MainWindow-iPad.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; name = "MainWindow-iPad.xib"; path = "CoronaEnterprise/Corona/ios/resource/MainWindow-iPad.xib"; sourceTree = SOURCE_ROOT; };
@@ -113,6 +116,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				30D0B104184549B20093659C /* CoreVideo.framework in Frameworks */,
+				30D0B105184549B90093659C /* GLKit.framework in Frameworks */,
 				30C6E78C1782DE0400879B5D /* Social.framework in Frameworks */,
 				3097A1D21781EB1000B88648 /* AdSupport.framework in Frameworks */,
 				A484117715128D5D0074BD57 /* AddressBook.framework in Frameworks */,
@@ -198,6 +203,7 @@
 		A484111C15114F700074BD57 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				30D0B103184549B20093659C /* CoreVideo.framework */,
 				30C6E78B1782DE0400879B5D /* Social.framework */,
 				3097A1D11781EB1000B88648 /* AdSupport.framework */,
 				A484116315128D5C0074BD57 /* AddressBook.framework */,

@@ -243,11 +243,11 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 					luaState.getGlobal( "system" );
 					luaState.getField( -1, "pathForFile" );
 					luaState.pushString( fileName );
-					luaState.pushValue( -1 );
+					luaState.pushValue( -4 ); // Basedir is at position -4
 					luaState.call( 2, 1 );  // Call pathForFile() with 2 arguments and 1 return value.
 					final String filePath = luaState.toString( -1 );
 					images.add( filePath );
-					luaState.pop( 3 );
+					luaState.pop( 1 );
 	
 					// Pop the image
 					luaState.pop( 1 );

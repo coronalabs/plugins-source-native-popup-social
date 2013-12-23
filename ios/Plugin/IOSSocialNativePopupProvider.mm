@@ -62,7 +62,6 @@ enum SERVICE_PROVIDER_CONSTS { TWITTER, FACEBOOK, SINAWEIBO, TENCENTWEIBO };
 static const char kPopupName[] = "social";
 static const char kMetatableName[] = __FILE__; // Globally unique value
 
-
 int
 IOSSocialNativePopupProvider::Open( lua_State *L )
 {
@@ -294,7 +293,10 @@ IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 			}
 			else
 			{
-				isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeTencentWeibo];
+				if ( NULL != SLServiceTypeTencentWeibo )
+				{
+					isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeTencentWeibo];
+				}
 			}
 		}
 		else
@@ -384,14 +386,17 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 					}
 					else
 					{
-						SLServiceType = SLServiceTypeTencentWeibo;
+						if ( NULL != SLServiceTypeTencentWeibo )
+						{
+							SLServiceType = SLServiceTypeTencentWeibo;
+						}
 					}
 				}
 				
 				// If passed service type
 				if ( nil == SLServiceType )
 				{
-					luaL_error( L, "native.canShowPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s,", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO] );
+					luaL_error( L, "native.canShowPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s, %s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO], kServiceProviderName[TENCENTWEIBO] );
 				}
 			
 				// Set up our SLComposeViewController, for the service type specified

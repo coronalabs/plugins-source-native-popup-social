@@ -56,12 +56,11 @@ class IOSSocialNativePopupProvider
 
 // ----------------------------------------------------------------------------
 
-const char *kServiceProviderName[] = { "twitter", "facebook", "sinaWeibo" };
-enum SERVICE_PROVIDER_CONSTS { TWITTER, FACEBOOK, SINAWEIBO };
+const char *kServiceProviderName[] = { "twitter", "facebook", "sinaWeibo", "tencentWeibo" };
+enum SERVICE_PROVIDER_CONSTS { TWITTER, FACEBOOK, SINAWEIBO, TENCENTWEIBO };
 
 static const char kPopupName[] = "social";
 static const char kMetatableName[] = __FILE__; // Globally unique value
-
 
 int
 IOSSocialNativePopupProvider::Open( lua_State *L )
@@ -285,9 +284,24 @@ IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 		{
 			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeSinaWeibo];
 		}
+		else if ( 0 == strcmp( kServiceProviderName[TENCENTWEIBO], serviceName ) )
+		{
+			// TencentWeibo is only available on iOS 7, so if we are running on an iOS version less than 7, then we set isAvailable to false
+			if ( [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] == NSOrderedAscending )
+			{
+				isAvailable = false;
+			}
+			else
+			{
+				if ( NULL != SLServiceTypeTencentWeibo )
+				{
+					isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeTencentWeibo];
+				}
+			}
+		}
 		else
 		{
-			luaL_error( L, "native.canShowPopup( '%s' ): Invalid service specified. Supported services are: %s, %s, %s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO] );
+			luaL_error( L, "native.canShowPopup( '%s' ): Invalid service specified. Supported services are: %s, %s, %s, $s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO], kServiceProviderName[TENCENTWEIBO] );
 		}
 	}
 	else
@@ -355,19 +369,34 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 				{
 					SLServiceType = SLServiceTypeTwitter;
 				}
-				if ( 0 == strcmp( kServiceProviderName[FACEBOOK], service ) )
+				else if ( 0 == strcmp( kServiceProviderName[FACEBOOK], service ) )
 				{
 					SLServiceType = SLServiceTypeFacebook;
 				}
-				if ( 0 == strcmp( kServiceProviderName[SINAWEIBO], service ) )
+				else if ( 0 == strcmp( kServiceProviderName[SINAWEIBO], service ) )
 				{
 					SLServiceType = SLServiceTypeSinaWeibo;
+				}
+				else if ( 0 == strcmp( kServiceProviderName[TENCENTWEIBO], service ) )
+				{
+					// TencentWeibo is only available on iOS 7, so if we are running on an iOS version less than 7, just return
+					if ( [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] == NSOrderedAscending )
+					{
+						return 0;
+					}
+					else
+					{
+						if ( NULL != SLServiceTypeTencentWeibo )
+						{
+							SLServiceType = SLServiceTypeTencentWeibo;
+						}
+					}
 				}
 				
 				// If passed service type
 				if ( nil == SLServiceType )
 				{
-					luaL_error( L, "native.canShowPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s,", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO] );
+					luaL_error( L, "native.canShowPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s, %s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO], kServiceProviderName[TENCENTWEIBO] );
 				}
 			
 				// Set up our SLComposeViewController, for the service type specified

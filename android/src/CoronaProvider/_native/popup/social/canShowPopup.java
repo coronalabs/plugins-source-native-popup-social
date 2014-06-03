@@ -63,8 +63,9 @@ public class canShowPopup implements com.naef.jnlua.NamedJavaFunction
 		{
 			if ( resolveInfo.activityInfo == null ) continue;
 
-			// Does this package name match what we specified?
-			if ( resolveInfo.activityInfo.packageName.contains( packageNameSearch.toLowerCase() ) )
+			// Does this package name match what we specified?  Optionally if they just put in "share" then they don't care about who they want to share it with
+			// so we can say that it exists
+			if ( resolveInfo.activityInfo.packageName.contains( packageNameSearch.toLowerCase() ) || "share".equals(packageNameSearch.toLowerCase()) )
 			{
 				// Match
 				doesExist = true;

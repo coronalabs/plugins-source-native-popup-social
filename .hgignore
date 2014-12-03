@@ -1,0 +1,5 @@
+# Hidden files used by the Finder in MacOS
+.DS_Store
+
+# Build files
+build/*

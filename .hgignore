@@ -1,3 +1,10 @@
+syntax: glob
+
+xcuserdata/*
+
+# XCode
+*.xcworkspace*
+
 # Hidden files used by the Finder in MacOS
 .DS_Store
 

@@ -10,3 +10,5 @@ xcuserdata/*
 
 # Build files
 build/*
+android/bin/*
+android/gen/*

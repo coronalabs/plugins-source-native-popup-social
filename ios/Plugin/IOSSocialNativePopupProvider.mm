@@ -56,16 +56,26 @@ class IOSSocialNativePopupProvider
 
 // ----------------------------------------------------------------------------
 
-const char *kServiceProviderName[] = { "twitter", "facebook", "sinaWeibo", "tencentWeibo" };
-enum SERVICE_PROVIDER_CONSTS { TWITTER, FACEBOOK, SINAWEIBO, TENCENTWEIBO };
+const char *kServiceProviderName[] = { "activity", "twitter", "facebook", "sinaWeibo", "tencentWeibo" };
 
-static const char kPopupName[] = "social";
+typedef enum ServiceProviderType {
+	kServiceProviderActivity,
+	kServiceProviderTwitter,
+	kServiceProviderFacebook,
+	kServiceProviderSinaweibo,
+	kServiceProviderTencentweibo,
+
+	kNumServiceProviderTypes
+};
+
+const char IOSSocialNativePopupProvider::kPopupName[] = "social";
 static const char kMetatableName[] = __FILE__; // Globally unique value
 
 int
 IOSSocialNativePopupProvider::Open( lua_State *L )
 {
-	CoronaLuaInitializeGCMetatable( L, kMetatableName, Finalizer );
+	CoronaLuaInitializeGCMetatable( L,
+		kMetatableName, Finalizer );
 	void *platformContext = CoronaLuaGetContext( L );
 
 	const char *name = lua_tostring( L, 1 ); CORONA_ASSERT( 0 == strcmp( kPopupName, name ) );
@@ -120,8 +130,14 @@ IOSSocialNativePopupProvider::ToLibrary( lua_State *L )
 // ----------------------------------------------------------------------------
 
 IOSSocialNativePopupProvider::IOSSocialNativePopupProvider()
-:	fAppViewController( nil )
+:	fAppViewController( nil ),
+	fActivityAdapter( new IOSActivityAdapter( *this ) )
 {
+}
+
+IOSSocialNativePopupProvider::~IOSSocialNativePopupProvider()
+{
+	delete fActivityAdapter;
 }
 
 bool
@@ -272,19 +288,23 @@ IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 	if ( lua_isstring( L, -1 ) )
 	{
 		// Check if passed service type matches the 3 services we support
-		if ( 0 == strcmp( kServiceProviderName[TWITTER], serviceName ) )
+		if ( 0 == strcmp( kServiceProviderName[kServiceProviderActivity], serviceName ) )
+		{
+			isAvailable = true;
+		}
+		else if ( 0 == strcmp( kServiceProviderName[kServiceProviderTwitter], serviceName ) )
 		{
 			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeTwitter];
 		}
-		else if ( 0 == strcmp( kServiceProviderName[FACEBOOK], serviceName ) )
+		else if ( 0 == strcmp( kServiceProviderName[kServiceProviderFacebook], serviceName ) )
 		{
 			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeFacebook];
 		}
-		else if ( 0 == strcmp( kServiceProviderName[SINAWEIBO], serviceName ) )
+		else if ( 0 == strcmp( kServiceProviderName[kServiceProviderSinaweibo], serviceName ) )
 		{
 			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeSinaWeibo];
 		}
-		else if ( 0 == strcmp( kServiceProviderName[TENCENTWEIBO], serviceName ) )
+		else if ( 0 == strcmp( kServiceProviderName[kServiceProviderTencentweibo], serviceName ) )
 		{
 			// TencentWeibo is only available on iOS 7, so if we are running on an iOS version less than 7, then we set isAvailable to false
 			if ( [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] == NSOrderedAscending )

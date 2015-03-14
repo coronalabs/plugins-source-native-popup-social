@@ -331,20 +331,23 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				// Set the type to text/plain.
 				sharingIntent.setType( "text/plain" );
 			}
-			
+
 			// Create a string builder, to store the message and urls
 			StringBuilder postMessage = new StringBuilder();
-			postMessage.append( socialMessage );
+			if (socialMessage != null && socialMessage.length() > 0 ) {
+				postMessage.append( socialMessage );
+				postMessage.append( " " );
+			} 
 						
 			// Append the url's to the message
 			if ( 1 == urls.size() ) 
 			{
-				postMessage.append( ". " );
+				//postMessage.append( ". " );
 				postMessage.append( urls.get( 0 ) );
 			}
 			else if ( urls.size() > 1 )
 			{
-				postMessage.append( ". " );
+				//postMessage.append( ". " );
 				// Loop through the url's
 				for ( int i = 0; i < urls.size(); i ++ )
 				{
@@ -404,7 +407,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				});
 
 				// Activities we do not wish to show
-				final String[] hiddenPackages = new String[] { "com.facebook.katana", "com.google.android.apps.uploader" };
+				final String[] hiddenPackages = new String[] { "com.google.android.apps.uploader" };
 
 				// Invoke custom chooser
 				if ( CoronaEnvironment.getCoronaActivity() != null )

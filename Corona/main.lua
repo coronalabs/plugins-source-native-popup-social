@@ -94,12 +94,12 @@ local function onShareButtonReleased( event )
 		native.showPopup( popupName,
 		{
 			service = serviceName, -- The service key is ignored on Android.
-			message = "I saved the planet using the Corona SDK!",
+			--message = "I saved the planet using the Corona SDK!",
 			listener = listener,
-			image = 
-			{
-				{ filename = "Icon.png", baseDir = system.DocumentsDirectory },
-			},
+			--image = 
+			--{
+			--	{ filename = "Icon.png", baseDir = system.ResourcesDirectory },
+			--},
 			url = 
 			{ 
 				"http://www.coronalabs.com",

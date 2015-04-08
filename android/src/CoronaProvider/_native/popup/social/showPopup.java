@@ -167,6 +167,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 	// Our lua callback listener
  	private int fListener;
 	private Intent sharingIntent;	
+	private boolean allowFacebook;
 		
 	/**
 	 * This method is called when the Lua function is called.
@@ -290,6 +291,8 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 
 			// Assign the sharing intent
 			sharingIntent = new Intent( Intent.ACTION_SEND );
+			// assume facebook will work
+			allowFacebook = true;
 
 			// Get the corona application context
 			Context coronaApplication = CoronaEnvironment.getApplicationContext();
@@ -305,6 +308,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				sharingIntent.setType( fileServices.getMimeTypeFrom( imageUri ) );
 				// Set the images
 				sharingIntent.putExtra( Intent.EXTRA_STREAM, imageUri );
+				allowFacebook = false;
 			}
 			else if ( images.size() > 1 )
 			{
@@ -325,6 +329,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 			    }
 				
 			    sharingIntent.putParcelableArrayListExtra( Intent.EXTRA_STREAM, imageUris );
+			    allowFacebook = false;
 			}
 			else // If there are no images, set the mime type to text/plain
 			{
@@ -334,9 +339,12 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 
 			// Create a string builder, to store the message and urls
 			StringBuilder postMessage = new StringBuilder();
-			if (socialMessage != null && socialMessage.length() > 0 ) {
-				postMessage.append( socialMessage );
-				postMessage.append( " " );
+			if (socialMessage != null) {
+				if (socialMessage.length() > 0 ) {
+					postMessage.append( socialMessage );
+					postMessage.append( " " );
+					allowFacebook = false;
+				}
 			} 
 						
 			// Append the url's to the message
@@ -407,7 +415,12 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				});
 
 				// Activities we do not wish to show
-				final String[] hiddenPackages = new String[] { "com.google.android.apps.uploader" };
+				String[] hiddenPackages; 
+				if (allowFacebook) {
+					hiddenPackages = new String[] { "com.google.android.apps.uploader" };
+				} else {
+					hiddenPackages = new String[] { "com.facebook.katana", "com.google.android.apps.uploader" };
+				}
 
 				// Invoke custom chooser
 				if ( CoronaEnvironment.getCoronaActivity() != null )

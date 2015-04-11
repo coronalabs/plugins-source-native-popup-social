@@ -167,7 +167,6 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 	// Our lua callback listener
  	private int fListener;
 	private Intent sharingIntent;	
-	private boolean allowFacebook;
 		
 	/**
 	 * This method is called when the Lua function is called.
@@ -180,6 +179,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 	@Override
 	public int invoke( final LuaState luaState ) 
 	{
+		boolean allowFacebook = true;
 		try 
 		{			
 			// Fetch the Lua function's first argument.
@@ -291,8 +291,6 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 
 			// Assign the sharing intent
 			sharingIntent = new Intent( Intent.ACTION_SEND );
-			// assume facebook will work
-			allowFacebook = true;
 
 			// Get the corona application context
 			Context coronaApplication = CoronaEnvironment.getApplicationContext();
@@ -391,7 +389,8 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 		
 		// Corona runtime task dispatcher
 		final CoronaRuntimeTaskDispatcher dispatcher = new CoronaRuntimeTaskDispatcher(luaState);
-			
+		final boolean supportFacebook = allowFacebook;
+
 		// Create a new runnable object to invoke our activity
 		Runnable activityRunnable = new Runnable()
 		{
@@ -416,7 +415,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 
 				// Activities we do not wish to show
 				String[] hiddenPackages; 
-				if (allowFacebook) {
+				if (supportFacebook) {
 					hiddenPackages = new String[] { "com.google.android.apps.uploader" };
 				} else {
 					hiddenPackages = new String[] { "com.facebook.katana", "com.google.android.apps.uploader" };

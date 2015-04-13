@@ -179,6 +179,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 	@Override
 	public int invoke( final LuaState luaState ) 
 	{
+		boolean allowFacebook = true;
 		try 
 		{			
 			// Fetch the Lua function's first argument.
@@ -305,6 +306,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				sharingIntent.setType( fileServices.getMimeTypeFrom( imageUri ) );
 				// Set the images
 				sharingIntent.putExtra( Intent.EXTRA_STREAM, imageUri );
+				allowFacebook = false;
 			}
 			else if ( images.size() > 1 )
 			{
@@ -325,26 +327,33 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 			    }
 				
 			    sharingIntent.putParcelableArrayListExtra( Intent.EXTRA_STREAM, imageUris );
+			    allowFacebook = false;
 			}
 			else // If there are no images, set the mime type to text/plain
 			{
 				// Set the type to text/plain.
 				sharingIntent.setType( "text/plain" );
 			}
-			
+
 			// Create a string builder, to store the message and urls
 			StringBuilder postMessage = new StringBuilder();
-			postMessage.append( socialMessage );
+			if (socialMessage != null) {
+				if (socialMessage.length() > 0 ) {
+					postMessage.append( socialMessage );
+					postMessage.append( " " );
+					allowFacebook = false;
+				}
+			} 
 						
 			// Append the url's to the message
 			if ( 1 == urls.size() ) 
 			{
-				postMessage.append( ". " );
+				//postMessage.append( ". " );
 				postMessage.append( urls.get( 0 ) );
 			}
 			else if ( urls.size() > 1 )
 			{
-				postMessage.append( ". " );
+				//postMessage.append( ". " );
 				// Loop through the url's
 				for ( int i = 0; i < urls.size(); i ++ )
 				{
@@ -380,7 +389,8 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 		
 		// Corona runtime task dispatcher
 		final CoronaRuntimeTaskDispatcher dispatcher = new CoronaRuntimeTaskDispatcher(luaState);
-			
+		final boolean supportFacebook = allowFacebook;
+
 		// Create a new runnable object to invoke our activity
 		Runnable activityRunnable = new Runnable()
 		{
@@ -404,7 +414,12 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				});
 
 				// Activities we do not wish to show
-				final String[] hiddenPackages = new String[] { "com.facebook.katana", "com.google.android.apps.uploader" };
+				String[] hiddenPackages; 
+				if (supportFacebook) {
+					hiddenPackages = new String[] { "com.google.android.apps.uploader" };
+				} else {
+					hiddenPackages = new String[] { "com.facebook.katana", "com.google.android.apps.uploader" };
+				}
 
 				// Invoke custom chooser
 				if ( CoronaEnvironment.getCoronaActivity() != null )

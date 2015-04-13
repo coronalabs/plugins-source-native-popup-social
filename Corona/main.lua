@@ -73,6 +73,10 @@ local achivementText = display.newText --( "You saved the planet!\n\nTouch any o
 	align = "center",
 }
 
+local sendMessage = false
+local sendURL = false
+local sendImage = false
+
 -- Exectuted upon touching & releasing a widget button
 local function onShareButtonReleased( event )
 	local serviceName = event.target.id
@@ -89,22 +93,24 @@ local function onShareButtonReleased( event )
 		function listener:popup( event )
 			print( "name(" .. event.name .. ") type(" .. event.type .. ") action(" .. tostring(event.action) .. ") limitReached(" .. tostring(event.limitReached) .. ")" )			
 		end
+		
+		local options = {}
+		options.service = serviceName
+		options.listener = listener
+		if sendMessage then
+			options.message = "I saved the planet using Corona SDK"
+		end
+		if sendURL then
+			options.url = { "http://www.coronalabs.com" }
+		end
+		if sendImage then
+			options.image = {
+				{ filename = "Icon.png", baseDir = system.ResourcesDirectory },
+			}
+		end
 
 		-- Show the popup
-		native.showPopup( popupName,
-		{
-			service = serviceName, -- The service key is ignored on Android.
-			message = "I saved the planet using the Corona SDK!",
-			listener = listener,
-			image = 
-			{
-				{ filename = "Icon.png", baseDir = system.DocumentsDirectory },
-			},
-			url = 
-			{ 
-				"http://www.coronalabs.com",
-			}
-		})
+		native.showPopup( popupName, options )
 	else
 		if isSimulator then
 			native.showAlert( "Build for device", "This plugin is not supported on the Corona Simulator, please build for an iOS/Android device or the Xcode simulator", { "OK" } )
@@ -114,6 +120,65 @@ local function onShareButtonReleased( event )
 		end
 	end
 end
+
+
+local function onSwitchPress( event )
+    local switch = event.target
+    print( "Switch with ID '"..switch.id.."' is on: "..tostring(switch.isOn) )
+    if switch.id == "message" and switch.isOn then
+    	sendMessage = true
+    else 
+    	sendMessage = false
+    end
+    if switch.id == "url" and switch.isOn then
+    	sendURL = true
+    else 
+    	sendURL = false
+    end
+    if switch.id == "image" and switch.isOn then
+    	sendImage = true
+    else 
+    	sendImage = false
+    end
+end
+
+-- Create the widget
+local checkboxButton1 = widget.newSwitch
+{
+    left = 50,
+    top = 125,
+    style = "checkbox",
+    id = "message",
+    onPress = onSwitchPress
+}
+local messageLabel = display.newText("Send message", checkboxButton1.x + 35, checkboxButton1.y, native.systemFont, 20)
+messageLabel:setFillColor(1)
+messageLabel.anchorX = 0
+
+-- Create the widget
+local checkboxButton2 = widget.newSwitch
+{
+    left = 50,
+    top = 175,
+    style = "checkbox",
+    id = "url",
+    onPress = onSwitchPress
+}
+local urlLabel = display.newText("Send URL", checkboxButton2.x + 35, checkboxButton2.y, native.systemFont, 20)
+urlLabel:setFillColor(1)
+urlLabel.anchorX = 0
+-- Create the widget
+local checkboxButton3 = widget.newSwitch
+{
+    left = 50,
+    top = 225,
+    style = "checkbox",
+    id = "image",
+    onPress = onSwitchPress
+}
+local imageLabel = display.newText("Send Image", checkboxButton3.x + 35, checkboxButton3.y, native.systemFont, 20)
+imageLabel:setFillColor(1)
+imageLabel.anchorX = 0
 
 
 -- Create buttons to show the popup (per platform)

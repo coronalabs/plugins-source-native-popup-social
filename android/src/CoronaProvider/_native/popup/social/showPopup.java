@@ -306,7 +306,6 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				sharingIntent.setType( fileServices.getMimeTypeFrom( imageUri ) );
 				// Set the images
 				sharingIntent.putExtra( Intent.EXTRA_STREAM, imageUri );
-				//allowFacebook = false;
 			}
 			else if ( images.size() > 1 )
 			{
@@ -327,7 +326,6 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 			    }
 				
 			    sharingIntent.putParcelableArrayListExtra( Intent.EXTRA_STREAM, imageUris );
-			    //allowFacebook = false;
 			}
 			else // If there are no images, set the mime type to text/plain
 			{

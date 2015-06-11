@@ -294,7 +294,6 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 
 			// Get the corona application context
 			Context coronaApplication = CoronaEnvironment.getApplicationContext();
-			//
 			FileServices fileServices = new FileServices( coronaApplication );
 
 			// If there is only one image
@@ -376,15 +375,15 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 			ex.printStackTrace();
 		}
 		
-		// Setup the lua callback and execute the sharing intent			
-			
+		// Setup the lua callback and execute the sharing intent
+
 		// Corona Activity
 		CoronaActivity coronaActivity = null;
 		if ( CoronaEnvironment.getCoronaActivity() != null )
 		{
 			coronaActivity = CoronaEnvironment.getCoronaActivity();
 		}
-		
+
 		// Corona runtime task dispatcher
 		final CoronaRuntimeTaskDispatcher dispatcher = new CoronaRuntimeTaskDispatcher(luaState);
 		final boolean supportFacebook = allowFacebook;

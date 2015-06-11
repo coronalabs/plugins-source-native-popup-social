@@ -56,10 +56,9 @@ class IOSSocialNativePopupProvider
 
 // ----------------------------------------------------------------------------
 
-const char *kServiceProviderName[] = { "activity", "twitter", "facebook", "sinaWeibo", "tencentWeibo" };
+const char *kServiceProviderName[] = { "twitter", "facebook", "sinaWeibo", "tencentWeibo" };
 
 typedef enum ServiceProviderType {
-	kServiceProviderActivity,
 	kServiceProviderTwitter,
 	kServiceProviderFacebook,
 	kServiceProviderSinaweibo,
@@ -68,7 +67,7 @@ typedef enum ServiceProviderType {
 	kNumServiceProviderTypes
 };
 
-const char IOSSocialNativePopupProvider::kPopupName[] = "social";
+static const char kPopupName[] = "social";
 static const char kMetatableName[] = __FILE__; // Globally unique value
 
 int
@@ -130,14 +129,8 @@ IOSSocialNativePopupProvider::ToLibrary( lua_State *L )
 // ----------------------------------------------------------------------------
 
 IOSSocialNativePopupProvider::IOSSocialNativePopupProvider()
-:	fAppViewController( nil ),
-	fActivityAdapter( new IOSActivityAdapter( *this ) )
+:	fAppViewController( nil )
 {
-}
-
-IOSSocialNativePopupProvider::~IOSSocialNativePopupProvider()
-{
-	delete fActivityAdapter;
 }
 
 bool
@@ -277,7 +270,7 @@ IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 	// If the SLComposeViewController class isn't available, don't proceed any further (prevent's crash on iOS versions less than 6.0)
 	if ( NSClassFromString( @"SLComposeViewController" ) == Nil )
 	{
-		printf( "Warning: The Social plugin is only supported on iOS versions greater or equal to iOS 6.0\n" );
+		CoronaLuaWarning( L, "The Social plugin is only supported on iOS versions greater or equal to iOS 6.0\n" );
 		return 0;
 	}
 
@@ -287,12 +280,8 @@ IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 	// Second argument (service) should be a string
 	if ( lua_isstring( L, -1 ) )
 	{
-		// Check if passed service type matches the 3 services we support
-		if ( 0 == strcmp( kServiceProviderName[kServiceProviderActivity], serviceName ) )
-		{
-			isAvailable = true;
-		}
-		else if ( 0 == strcmp( kServiceProviderName[kServiceProviderTwitter], serviceName ) )
+		// Check if passed service type matches the 4 services we support
+		if ( 0 == strcmp( kServiceProviderName[kServiceProviderTwitter], serviceName ) )
 		{
 			isAvailable = [SLComposeViewController isAvailableForServiceType:SLServiceTypeTwitter];
 		}
@@ -321,12 +310,12 @@ IOSSocialNativePopupProvider::canShowPopup( lua_State *L )
 		}
 		else
 		{
-			luaL_error( L, "native.canShowPopup( '%s' ): Invalid service specified. Supported services are: %s, %s, %s, $s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO], kServiceProviderName[TENCENTWEIBO] );
+			luaL_error( L, "native.canShowPopup( '%s' ): Invalid service specified. Supported services are: %s, %s, %s, $s", kPopupName, kServiceProviderName[kServiceProviderTwitter], kServiceProviderName[kServiceProviderFacebook], kServiceProviderName[kServiceProviderSinaweibo], kServiceProviderName[kServiceProviderTencentweibo] );
 		}
 	}
 	else
 	{
-		luaL_error( L, "native.canShowPopup( '%s' ) expects 2 arguments `popupType`, `service`. For example: native.showPopup( '%s', '%s' )", kPopupName, kPopupName, kServiceProviderName[TWITTER] );
+		luaL_error( L, "native.canShowPopup( '%s' ) expects 2 arguments `popupType`, `service`. For example: native.canShowPopup( '%s', '%s' )", kPopupName, kPopupName, kServiceProviderName[kServiceProviderTwitter] );
 	}
 	lua_pop( L, 1 );
 	
@@ -345,9 +334,9 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 	Self *context = ToLibrary( L );
 	
 	// If the SLComposeViewController class isn't available, don't proceed any further (prevent's crash on iOS versions less than 6.0)
-	if ( NSClassFromString( @"SLComposeViewController" ) == Nil )
+	if ( NSClassFromString( @"SLComposeViewController" ) == nil )
 	{
-		printf( "Warning: The Social plugin is only supported on iOS versions greater or equal to iOS 6.0\n" );
+		CoronaLuaWarning( L, "The Social plugin is only supported on iOS versions greater or equal to iOS 6.0\n" );
 		return 0;
 	}
 		
@@ -385,19 +374,19 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 				NSString *SLServiceType = nil;
 				
 				// Check if passed service type matches the 3 services we support, and set the service type accordingly
-				if ( 0 == strcmp( kServiceProviderName[TWITTER], service ) )
+				if ( 0 == strcmp( kServiceProviderName[kServiceProviderTwitter], service ) )
 				{
 					SLServiceType = SLServiceTypeTwitter;
 				}
-				else if ( 0 == strcmp( kServiceProviderName[FACEBOOK], service ) )
+				else if ( 0 == strcmp( kServiceProviderName[kServiceProviderFacebook], service ) )
 				{
 					SLServiceType = SLServiceTypeFacebook;
 				}
-				else if ( 0 == strcmp( kServiceProviderName[SINAWEIBO], service ) )
+				else if ( 0 == strcmp( kServiceProviderName[kServiceProviderSinaweibo], service ) )
 				{
 					SLServiceType = SLServiceTypeSinaWeibo;
 				}
-				else if ( 0 == strcmp( kServiceProviderName[TENCENTWEIBO], service ) )
+				else if ( 0 == strcmp( kServiceProviderName[kServiceProviderTencentweibo], service ) )
 				{
 					// TencentWeibo is only available on iOS 7, so if we are running on an iOS version less than 7, just return
 					if ( [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] == NSOrderedAscending )
@@ -413,10 +402,10 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 					}
 				}
 				
-				// If passed service type
+				// TODO: Have this show a popup similar to the Share Intent on Android
 				if ( nil == SLServiceType )
 				{
-					luaL_error( L, "native.canShowPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s, %s", kPopupName, kServiceProviderName[TWITTER], kServiceProviderName[FACEBOOK], kServiceProviderName[SINAWEIBO], kServiceProviderName[TENCENTWEIBO] );
+					luaL_error( L, "native.showPopup( '%s', serviceName ) invalid service specified. Supported services are: %s, %s, $s, %s", kPopupName, kServiceProviderName[kServiceProviderTwitter], kServiceProviderName[kServiceProviderFacebook], kServiceProviderName[kServiceProviderSinaweibo], kServiceProviderName[kServiceProviderTencentweibo] );
 				}
 			
 				// Set up our SLComposeViewController, for the service type specified
@@ -430,7 +419,7 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 						if ( [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] == NSOrderedAscending )
 						{
 							// Dismiss the social composition view controller.
-							[appViewController dismissModalViewControllerAnimated:YES];
+							[appViewController dismissViewControllerAnimated:YES completion:nil];
 						}
 					};
 				[controller setCompletionHandler:defaultHandler];
@@ -467,6 +456,19 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 			if ( msg )
 			{
 				NSString *message = [NSString stringWithUTF8String:msg];
+				
+				// Due to Facebook's Platform Policy, we can't pre-fill text in this manner on iOS 8.0+.
+				// Technically, this can be worked-around by not having the facebook app installed.
+				// For consistency with Android, we only take the pre-filled message for social media
+				// platforms outside of Facebook. See details at:
+				// https://developers.facebook.com/docs/apps/review/prefill
+				if ( [[[UIDevice currentDevice] systemVersion] compare:@"8.0" options:NSNumericSearch] != NSOrderedAscending
+						&& [controller serviceType] == SLServiceTypeFacebook)
+				{
+					CoronaLuaWarning( L, "native.showPopup( %s ) cannot accept pre-filled messages for Facebook as of iOS 8.0. See facebook's platform policy at: https://developers.facebook.com/docs/apps/review/prefill\n", kPopupName );
+					message = @"";
+				}
+        
 				if ( ! [controller setInitialText:message] )
 				{
 					if ( listenerRef )
@@ -529,7 +531,7 @@ IOSSocialNativePopupProvider::showPopup( lua_State *L )
 		}
 
 		// Present the social composition view controller modally.
-		[appViewController presentModalViewController:controller animated:YES];
+		[appViewController presentViewController:controller animated:YES completion:nil];
 	}
 
 	return 0;

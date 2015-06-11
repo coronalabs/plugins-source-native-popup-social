@@ -5,9 +5,9 @@
 --
 -- File: main.lua
 --
--- Version 1.0
+-- Version 1.1
 --
--- Copyright (C) 2013 Corona Labs Inc. All Rights Reserved.
+-- Copyright (C) 2015 Corona Labs Inc. All Rights Reserved.
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy of 
 -- this software and associated documentation files (the "Software"), to deal in the 
@@ -31,18 +31,24 @@
 -- made to this software and associated documentation and module files may or may not become
 -- part of an official software release. All modifications made to the software will be
 -- licensed under these same terms and conditions.
+--
+-- Revision History:
+-- 		1.0: Initial version
+-- 		1.1: UI update to allow certain things to be pre-filled. 
+--			 Several bugfixes and improvements.
 --*********************************************************************************************
 
--- Supported services: twitter, facebook & sinaWeibo
 -- Platforms: iOS, Android
+-- Supported services: 
+-- 		iOS: twitter, facebook, sinaWeibo, and tencentWeibo as of iOS 7.
+-- 		Android: Anything that can be added to a share intent.
 -- NOTE: More information on Sina Weibo here http://www.weibo.com/
--- NOTE 2: Facebook is not supported with this plugin on Android. See this for more information: https://developers.facebook.com/bugs/332619626816423/
 
 -- If we are on the simulator, show a warning that this plugin is only supported on device
 local isSimulator = "simulator" == system.getInfo( "environment" )
 
 if isSimulator then
-	native.showAlert( "Build for device", "This plugin is not supported on the Corona Simulator, please build for an iOS device or Xcode simulator", { "OK" } )
+	native.showAlert( "Build for device", "This plugin is not supported on the Corona Simulator, please build for an iOS/Android device or Xcode simulator", { "OK" } )
 end
 
 -- Hide the status bar
@@ -63,10 +69,11 @@ local background = display.newImage( "world.jpg", display.contentCenterX, displa
 -- Display some text
 local achivementText = display.newText --( "You saved the planet!\n\nTouch any of the buttons below to share your victory with your friends!", 12, 10, display.contentWidth - 20, 0, native.systemFontBold, 18 )
 {
-	text = "You saved the planet!\n\nTouch any of the buttons below to share your victory with your friends!",
+	text = "You saved the planet!\nTouch any of the buttons below to share your victory with your friends!",
 	x = display.contentCenterX,
 	y = 60,
-	width = display.contentWidth - 20,
+	-- Keep our text field within inner 80% of the screen so that it won't roll off on some devices.
+	width = (0.8) * display.contentWidth,
 	height = 0,
 	font = native.systemFontBold,
 	fontSize = 18,
@@ -105,7 +112,7 @@ local function onShareButtonReleased( event )
 		end
 		if sendImage then
 			options.image = {
-				{ filename = "Icon.png", baseDir = system.ResourcesDirectory },
+				{ filename = "Icon.png", baseDir = system.ResourceDirectory },
 			}
 		end
 
@@ -125,25 +132,17 @@ end
 local function onSwitchPress( event )
     local switch = event.target
     print( "Switch with ID '"..switch.id.."' is on: "..tostring(switch.isOn) )
-    if switch.id == "message" and switch.isOn then
-    	sendMessage = true
-    else 
-    	sendMessage = false
-    end
-    if switch.id == "url" and switch.isOn then
-    	sendURL = true
-    else 
-    	sendURL = false
-    end
-    if switch.id == "image" and switch.isOn then
-    	sendImage = true
-    else 
-    	sendImage = false
+    if switch.id == "message" then
+    	sendMessage = switch.isOn
+    elseif switch.id == "url" then
+    	sendURL = switch.isOn
+    elseif switch.id == "image" then
+    	sendImage = switch.isOn
     end
 end
 
--- Create the widget
-local checkboxButton1 = widget.newSwitch
+-- Create the checkbox for sending a message
+local messageCheckbox = widget.newSwitch
 {
     left = 50,
     top = 125,
@@ -151,12 +150,12 @@ local checkboxButton1 = widget.newSwitch
     id = "message",
     onPress = onSwitchPress
 }
-local messageLabel = display.newText("Send message", checkboxButton1.x + 35, checkboxButton1.y, native.systemFont, 20)
+local messageLabel = display.newText("Send message", messageCheckbox.x + 35, messageCheckbox.y, native.systemFont, 20)
 messageLabel:setFillColor(1)
 messageLabel.anchorX = 0
 
--- Create the widget
-local checkboxButton2 = widget.newSwitch
+-- Create the checkbox for sending a URL
+local urlCheckbox = widget.newSwitch
 {
     left = 50,
     top = 175,
@@ -164,11 +163,12 @@ local checkboxButton2 = widget.newSwitch
     id = "url",
     onPress = onSwitchPress
 }
-local urlLabel = display.newText("Send URL", checkboxButton2.x + 35, checkboxButton2.y, native.systemFont, 20)
+local urlLabel = display.newText("Send URL", urlCheckbox.x + 35, urlCheckbox.y, native.systemFont, 20)
 urlLabel:setFillColor(1)
 urlLabel.anchorX = 0
--- Create the widget
-local checkboxButton3 = widget.newSwitch
+
+-- Create the checkbox for sending an image
+local imageCheckbox = widget.newSwitch
 {
     left = 50,
     top = 225,
@@ -176,12 +176,12 @@ local checkboxButton3 = widget.newSwitch
     id = "image",
     onPress = onSwitchPress
 }
-local imageLabel = display.newText("Send Image", checkboxButton3.x + 35, checkboxButton3.y, native.systemFont, 20)
+local imageLabel = display.newText("Send Image", imageCheckbox.x + 35, imageCheckbox.y, native.systemFont, 20)
 imageLabel:setFillColor(1)
 imageLabel.anchorX = 0
 
 
--- Create buttons to show the popup (per platform)
+-- Use the share intent on Android to get any platform we could want
 if "Android" == system.getInfo( "platformName" ) then
 	-- Create a background to go behind our widget buttons
 	local buttonBackground = display.newRect( display.contentCenterX, display.contentHeight - 25, 220, 50 )
@@ -198,7 +198,7 @@ if "Android" == system.getInfo( "platformName" ) then
 		onRelease = onShareButtonReleased,
 	}
 	shareButton.x = display.contentCenterX
-else
+else -- We're on iOS and need a button for each social service we want to support
 	-- Create a background to go behind our widget buttons
 	local buttonBackground = display.newRect( display.contentCenterX, 380, 220, 200 )
 	buttonBackground:setFillColor( 0 )

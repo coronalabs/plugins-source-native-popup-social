@@ -13,3 +13,6 @@ build/*
 android/bin/*
 android/gen/*
 
+# Git files
+.gitignore
+

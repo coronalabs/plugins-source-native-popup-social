@@ -281,7 +281,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				}
 			}
 			// If the url field is a string
-			if ( luaState.type( - 1 ) == LuaType.STRING )
+			if ( luaState.type( -1 ) == LuaType.STRING )
 			{
 				urls.add( luaState.toString( -1 ) );
 			}
@@ -410,11 +410,11 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 					}
 				});
 
-				// TODO: After spirited internal debate, it has come to light that there is one situation
+				// After spirited internal debate, it has come to light that there is one situation
 				// where we *can* show facebook. If the payload *only* includes a url (no image, no message)
 				// then facebook will correctly populate the dialog with a url. 
 				// 
-				// In all other cases (e.g. url + image, message, image, etc), 
+				// In all other cases (e.g. url + image, message, etc),
 				// we have to exclude facebook b/c the post dialog will appear blank (no attachments).
 				// 
 				// Activities we do not wish to show

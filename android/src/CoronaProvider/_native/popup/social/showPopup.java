@@ -179,7 +179,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 	@Override
 	public int invoke( final LuaState luaState ) 
 	{
-		boolean allowFacebook = true;
+		boolean disableFacebook = false;
 		try 
 		{			
 			// Fetch the Lua function's first argument.
@@ -338,7 +338,10 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				if (socialMessage.length() > 0 ) {
 					postMessage.append( socialMessage );
 					postMessage.append( " " );
-					allowFacebook = false;
+
+					// Disable facebook from appearing in the share
+					// intent if there's just a message here.
+					disableFacebook = (urls.isEmpty() && images.isEmpty());
 				}
 			} 
 						
@@ -386,7 +389,11 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 
 		// Corona runtime task dispatcher
 		final CoronaRuntimeTaskDispatcher dispatcher = new CoronaRuntimeTaskDispatcher(luaState);
-		final boolean supportFacebook = allowFacebook;
+
+		// We don't add facebook to the share intent if they're just trying to send a pre-filled message
+		// All other cases will allow Facebook to appear in the share intent,
+		// but a pre-filled message will be silently dropped.
+		final boolean allowFacebook = !disableFacebook;
 
 		// Create a new runnable object to invoke our activity
 		Runnable activityRunnable = new Runnable()
@@ -410,16 +417,9 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 					}
 				});
 
-				// After spirited internal debate, it has come to light that there is one situation
-				// where we *can* show facebook. If the payload *only* includes a url (no image, no message)
-				// then facebook will correctly populate the dialog with a url. 
-				// 
-				// In all other cases (e.g. url + image, message, etc),
-				// we have to exclude facebook b/c the post dialog will appear blank (no attachments).
-				// 
 				// Activities we do not wish to show
-				String[] hiddenPackages; 
-				if (supportFacebook) {
+				String[] hiddenPackages;
+				if (allowFacebook) {
 					hiddenPackages = new String[] { "com.google.android.apps.uploader" };
 				} else {
 					hiddenPackages = new String[] { "com.facebook.katana", "com.google.android.apps.uploader" };

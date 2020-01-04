@@ -13,9 +13,11 @@ import java.util.*;
 
 // Android Imports
 import android.content.Intent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.net.Uri;
 import android.content.pm.ResolveInfo;
+import android.os.Build;
 import android.os.Parcelable;
 
 // JNLua imports
@@ -50,9 +52,32 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 		return "showPopup";
 	}
 
-	// Function to create a custom chooser intent
-	private Intent customChooserIntent( Context context, Intent prototype, String[] forbiddenChoices, String shareString ) 
-	{
+	// Creates a custom chooser intent with given string. It also exclude some app from chooser as specified in forbiddenList.
+	private Intent customChooserIntent( Context context, Intent prototype, List<String> forbiddenList, String shareString ) {
+		// Android N provides a simple way of excluding components with Intent.EXTRA_EXCLUDE_COMPONENTS
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			Intent chooserIntent = Intent.createChooser(prototype, shareString);
+			List<ResolveInfo> activities = context.getPackageManager().queryIntentActivities(prototype, 0 /* no flag */);
+			if (activities.isEmpty()) {
+				return chooserIntent;
+			}
+			List<ComponentName> componentNames = new ArrayList<ComponentName>();
+			for (ResolveInfo resolveInfo : activities) {
+				if (forbiddenList.contains(resolveInfo.activityInfo.packageName)) {
+					ActivityInfo activityInfo = resolveInfo.activityInfo;
+					componentNames.add(new ComponentName(activityInfo.packageName, activityInfo.name));
+				}
+			}
+			chooserIntent.putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, componentNames.toArray(new Parcelable[0]));
+			return chooserIntent;
+		}
+
+		return customChooserIntentLegacy(context, prototype, forbiddenList, shareString);
+	}
+
+	// Iterates all activities returned by queryIntentActivities. Filters out ones in forbiddenList and sort to create a new chooser intent.
+	private Intent customChooserIntentLegacy( Context context, Intent prototype, List<String> forbiddenList, String shareString )
+		{
 		List<Intent> targetedShareIntents = new ArrayList<Intent>();
 		List<HashMap<String, String>> intentMetaInfo = new ArrayList<HashMap<String, String>>();
 		Intent chooserIntent;
@@ -60,8 +85,7 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 		Intent dummy = new Intent(prototype.getAction());
 		dummy.setType(prototype.getType());
 		List<ResolveInfo> resInfo = context.getPackageManager().queryIntentActivities( dummy, 0 );
-		List<String> forbiddenList = Arrays.asList( forbiddenChoices );
-		
+
 		// If there are activities
 		if ( !resInfo.isEmpty() ) 
 		{
@@ -428,7 +452,8 @@ public class showPopup implements com.naef.jnlua.NamedJavaFunction
 				// Invoke custom chooser
 				if ( CoronaEnvironment.getCoronaActivity() != null )
 				{
-					CoronaEnvironment.getCoronaActivity().startActivityForResult( customChooserIntent( CoronaEnvironment.getCoronaActivity(), sharingIntent, hiddenPackages, "Share via:" ), requestCode );
+					Intent intent = customChooserIntent( CoronaEnvironment.getCoronaActivity(), sharingIntent, Arrays.asList(hiddenPackages), "Share via:" );
+					CoronaEnvironment.getCoronaActivity().startActivityForResult( intent, requestCode );
 				}
 			}
 	    };

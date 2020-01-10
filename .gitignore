@@ -4,3 +4,7 @@ build/
 # Mercurial files
 .hgignore
 
+android/bin/
+android/gen/
+android/libs/
+android/local.properties

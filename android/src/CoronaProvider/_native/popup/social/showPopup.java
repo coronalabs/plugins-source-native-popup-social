@@ -17,6 +17,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.net.Uri;
 import android.content.pm.ResolveInfo;
+import android.content.pm.ActivityInfo;
 import android.os.Build;
 import android.os.Parcelable;
 
